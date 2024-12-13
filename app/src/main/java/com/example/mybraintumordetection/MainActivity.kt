@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.mybraintumordetection.HuggingFace.RequestData
+import com.example.mybraintumordetection.HuggingFace.ResponseData
 import com.example.mybraintumordetection.HuggingFace.RetrofitBrainTumor
 import com.example.mybraintumordetection.databinding.ActivityMainBinding
 import com.google.firebase.database.DataSnapshot
@@ -32,6 +33,10 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import java.util.UUID
+import retrofit2.Call
+import retrofit2.Response
+import retrofit2.Callback
+
 
 class MainActivity : AppCompatActivity() {
     var misbraintumors = ArrayList<BrainTumor>()
@@ -51,76 +56,35 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         firebaseDatabase = FirebaseDatabase.getInstance()
         databaseReference = firebaseDatabase.getReference()
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.btnenviar.setOnClickListener(object : View.OnClickListener{
             override fun onClick(v: View?) {
-                if(Miuri!=null){
-                    var reference: StorageReference = storageReference.child("imgbraintumor/"+ UUID.randomUUID().toString())
-
+                if (Miuri != null) {
+                    val reference = storageReference.child("imgbraintumor/${UUID.randomUUID()}")
                     reference.putFile(Miuri!!).addOnSuccessListener {
-                        reference.downloadUrl.addOnSuccessListener { uri: Uri ->
+                            reference.downloadUrl.addOnSuccessListener { uri ->
+                                val imageUrl = uri.toString()
+                                val nombre = binding.txtnombre.text.toString()
 
-                            val miURL:String = uri.toString()
-                            val requestData = RequestData(miURL)
-                            val nombre = binding.txtnombre.getText().toString()
-                            val existeBrainTumor:String = "TipoX"
-                            val key = databaseReference.child("Tumor cerebral").push().getKey()
-                            val c = BrainTumor(nombre,  key.toString(),miURL,existeBrainTumor)
-                            databaseReference.child("Tumor cerebral").push().setValue(c)
-                            val mensaje:String= "Existe tumor cerebral: "+existeBrainTumor
-                            Toast.makeText(applicationContext,mensaje, Toast.LENGTH_LONG).show()
-
-                            binding.txtnombre.setText("")
-                            val call = RetrofitBrainTumor.getinstance.predict(miURL)
-                            /*call.enqueue(object : Callback<ResponseData> {
-                                override fun onResponse(
-                                    call: Call<ResponseData>,
-                                    response: Response<ResponseData>
-                                ) {
-                                    if (response.isSuccessful) {
-                                        val responseData = response.body()
-                                        responseData?.let {
-                                            val nombre = binding.txtnombre.getText().toString()
-                                            val tipoHuella:String = it.prediction
-                                            val key = databaseReference.child("Huella").push().getKey()
-                                            val c = Huella(nombre,  key.toString(),miURL,tipoHuella)
-                                            databaseReference.child("Huella").push().setValue(c)
-                                            val mensaje:String= "Tipo Huella: "+tipoHuella
-                                            Toast.makeText(applicationContext,mensaje,Toast.LENGTH_LONG).show()
-                                            val myToast = Toast.makeText(applicationContext,mensaje,Toast.LENGTH_SHORT)
-                                            myToast.show()
-                                            binding.txtnombre.setText("")
-                                        }
-                                    } else {
-                                        val myToast = Toast.makeText(applicationContext,"Error1",Toast.LENGTH_SHORT)
-                                        myToast.show()
-                                    }
+                                if (nombre.isBlank()) {
+                                    Toast.makeText(applicationContext, "Ingrese un nombre válido", Toast.LENGTH_SHORT).show()
+                                    return@addOnSuccessListener
                                 }
 
-                                override fun onFailure(call: Call<ResponseData>, t: Throwable) {
-                                    val myToast = Toast.makeText(applicationContext,"Error2",Toast.LENGTH_SHORT)
-                                    myToast.show()
-                                }
-                            })
-
-
-                            */
-
-                        }.addOnFailureListener { exception ->
-                            Toast.makeText(applicationContext,"Image Retrived Failed: "+exception.message,
-                                Toast.LENGTH_LONG).show()
-
+                                predictTumor(imageUrl, nombre) // Envía la URL a la API
+                            }.addOnFailureListener { exception ->
+                                Toast.makeText(applicationContext, "Error al obtener URL: ${exception.message}", Toast.LENGTH_LONG).show()
+                            }
                         }
-
-                    }.addOnFailureListener {
-
-                        Toast.makeText(applicationContext, "Fallo en subir imagen", Toast.LENGTH_LONG)
-                            .show()
-                    }
+                        .addOnFailureListener { exception ->
+                            Toast.makeText(applicationContext, "Error al subir la imagen: ${exception.message}", Toast.LENGTH_LONG).show()
+                        }
+                } else {
+                    Toast.makeText(applicationContext, "Seleccione una imagen primero", Toast.LENGTH_SHORT).show()
                 }
+
             }
         })
 
@@ -128,16 +92,17 @@ class MainActivity : AppCompatActivity() {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 misbraintumors.clear()
                 for (postSnapshot in dataSnapshot.children) {
-                    for (postSnapshot1 in postSnapshot.children) {
-                        var nombre:String =postSnapshot1.child("nombre").value.toString()
-                        var key:String =postSnapshot1.child("key").value.toString()
-                        val urlHuella:String = postSnapshot1.child("urlBrainTumor").value.toString()
-                        var tipoHuella:String =postSnapshot1.child("existeBrainTumor").value.toString()
-                        var b: BrainTumor = BrainTumor(nombre,key,urlHuella,tipoHuella)
-                        misbraintumors.add(b)
+                    for (postSnapshot in postSnapshot.children) {
+                        val nombre = postSnapshot.child("nombre").value.toString()
+                        val key = postSnapshot.child("key").value.toString()
+                        val urlBrainTumor = postSnapshot.child("urlBrainTumor").value.toString()
+                        val existeBrainTumor = postSnapshot.child("existeBrainTumor").value.toString()
+                        val brainTumor = BrainTumor(nombre, key, urlBrainTumor, existeBrainTumor)
+                        misbraintumors.add(brainTumor)
                     }
                 }
                 val mensaje:String= "Dato cargados: "+misbraintumors.size
+
                 Toast.makeText(applicationContext,mensaje, Toast.LENGTH_LONG).show()
                 adapter = MyAdapter(applicationContext,misbraintumors)
                 binding.lvmisbraintumors.adapter = adapter
@@ -201,4 +166,36 @@ class MainActivity : AppCompatActivity() {
 
 
     }
+
+    private fun predictTumor(imageUrl: String, nombre: String) {
+        if (nombre.isBlank()) {
+            Toast.makeText(applicationContext, "Ingrese un nombre válido", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val requestData = RequestData(imageUrl)
+
+        RetrofitBrainTumor.getinstance.predict(requestData).enqueue(object : Callback<ResponseData> {
+            override fun onResponse(call: Call<ResponseData>, response: Response<ResponseData>) {
+                if (response.isSuccessful) {
+                    val prediction = response.body()?.prediction ?: "Sin predicción"
+
+                    // Crear objeto BrainTumor con el nombre y predicción
+                    val key = databaseReference.child("Tumor cerebral").push().key ?: ""
+                    val brainTumor = BrainTumor(nombre, key, imageUrl, prediction)
+
+                    // Guardar en Firebase
+                    databaseReference.child("Tumor cerebral").child(key).setValue(brainTumor)
+
+                } else {
+                    Toast.makeText(applicationContext, "Error en la predicción", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseData>, t: Throwable) {
+                Toast.makeText(applicationContext, "Error: ${t.message}", Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
 }

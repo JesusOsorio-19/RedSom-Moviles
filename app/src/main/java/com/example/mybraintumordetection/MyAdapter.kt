@@ -11,6 +11,7 @@ import com.bumptech.glide.Glide
 import com.example.mybraintumordetection.R
 
 class MyAdapter(private val context: Context, private val arraylist: java.util.ArrayList<BrainTumor>) : BaseAdapter() {
+
     private lateinit var txtminombre: TextView
     private lateinit var txtmibraintumor: TextView
     private lateinit var imgimagen: ImageView
@@ -34,7 +35,7 @@ class MyAdapter(private val context: Context, private val arraylist: java.util.A
         txtmibraintumor.text = arraylist[position].existeBrainTumor
 
         Glide.with(context)
-            .load(arraylist.get(position).urlBrainTumor)
+            .load(arraylist[position].urlBrainTumor)
             .into(imgimagen);
         return convertView
     }
