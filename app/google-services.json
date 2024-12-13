@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "982390026676",
+    "project_id": "mybraintumor-a81a8",
+    "storage_bucket": "mybraintumor-a81a8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982390026676:android:9488504f089831abfb02e1",
+        "android_client_info": {
+          "package_name": "com.example.mybraintumordetection"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB41sSx-whQhkhrbvRJfAo10U-LMG5daKY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
