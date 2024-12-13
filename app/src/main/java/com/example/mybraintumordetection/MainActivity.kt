@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnenviar.setOnClickListener(object : View.OnClickListener{
             override fun onClick(v: View?) {
+
                 if (Miuri != null) {
                     val reference = storageReference.child("imgbraintumor/${UUID.randomUUID()}")
                     reference.putFile(Miuri!!).addOnSuccessListener {
@@ -73,10 +74,13 @@ class MainActivity : AppCompatActivity() {
                                     return@addOnSuccessListener
                                 }
 
+
                                 predictTumor(imageUrl, nombre) // Envía la URL a la API
                             }.addOnFailureListener { exception ->
                                 Toast.makeText(applicationContext, "Error al obtener URL: ${exception.message}", Toast.LENGTH_LONG).show()
                             }
+
+
                         }
                         .addOnFailureListener { exception ->
                             Toast.makeText(applicationContext, "Error al subir la imagen: ${exception.message}", Toast.LENGTH_LONG).show()
@@ -84,6 +88,8 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     Toast.makeText(applicationContext, "Seleccione una imagen primero", Toast.LENGTH_SHORT).show()
                 }
+
+                Toast.makeText(applicationContext, "Iniciando proceso...", Toast.LENGTH_LONG).show()
 
             }
         })
@@ -163,8 +169,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-
-
     }
 
     private fun predictTumor(imageUrl: String, nombre: String) {
@@ -172,6 +176,8 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, "Ingrese un nombre válido", Toast.LENGTH_SHORT).show()
             return
         }
+
+
 
         val requestData = RequestData(imageUrl)
 
@@ -184,8 +190,10 @@ class MainActivity : AppCompatActivity() {
                     val key = databaseReference.child("Tumor cerebral").push().key ?: ""
                     val brainTumor = BrainTumor(nombre, key, imageUrl, prediction)
 
-                    // Guardar en Firebase
                     databaseReference.child("Tumor cerebral").child(key).setValue(brainTumor)
+
+                    binding.txtnombre.setText("")
+                    binding.imgFoto.setImageDrawable(null)
 
                 } else {
                     Toast.makeText(applicationContext, "Error en la predicción", Toast.LENGTH_LONG).show()
